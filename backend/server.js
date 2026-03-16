@@ -2,85 +2,157 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
-const { GoogleGenerativeAI } = require('@google/generative-ai'); // Подключаем библиотеку Google
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const bcrypt = require('bcrypt');       // Библиотека для шифрования паролей
+const jwt = require('jsonwebtoken');    // Библиотека для пропусков-токенов
 
 const app = express();
 const PORT = 3000;
-
 const prisma = new PrismaClient();
-// Инициализируем Gemini с твоим ключом из .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(cors());
 app.use(express.json());
 
-// Окно 1: Получение истории
-app.get('/entries', async (req, res) => {
+// ==========================================
+// 🛡️ ОХРАННИК (Middleware)
+// ==========================================
+// Эта функция будет стоять перед дневником и проверять токен
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Достаем токен из заголовка
+
+  if (!token) return res.status(401).json({ error: 'Нет доступа. Пожалуйста, войдите в систему.' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Пропуск недействителен или просрочен.' });
+    req.user = user; // Если токен верный, запоминаем, кто этот юзер
+    next(); // Пропускаем дальше к записям!
+  });
+};
+
+// ==========================================
+// 🚪 ВРАТА: РЕГИСТРАЦИЯ И ВХОД
+// ==========================================
+
+// 1. Регистрация нового юзера
+app.post('/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    // Проверяем, нет ли уже такого email
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: 'Этот Email уже занят' });
+
+    // Шифруем пароль (10 - это уровень сложности шифрования)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Создаем пользователя в базе
+    const newUser = await prisma.user.create({
+      data: { email, password: hashedPassword, name }
+    });
+
+    res.status(201).json({ message: 'Пользователь успешно зарегистрирован!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка при регистрации' });
+  }
+});
+
+// 2. Вход в систему (Логин)
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Ищем юзера
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    // Сравниваем пароль с тем, что в базе
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(400).json({ error: 'Неверный пароль' });
+
+    // Выдаем крипто-пропуск (токен), который будет действовать 7 дней
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка при входе' });
+  }
+});
+
+// ==========================================
+// 📖 ДНЕВНИК (Теперь под защитой Охранника!)
+// ==========================================
+
+// Окно 1: Получение истории (ТОЛЬКО СВОЕЙ)
+// Обрати внимание: мы добавили authenticateToken перед async
+app.get('/entries', authenticateToken, async (req, res) => {
   try {
     const entries = await prisma.journalEntry.findMany({
+      where: { userId: req.user.id }, // ИЩЕМ ТОЛЬКО ЗАПИСИ ЭТОГО ЮЗЕРА!
       orderBy: { createdAt: 'desc' }
     });
     res.json(entries);
   } catch (error) {
-    console.error('Ошибка при получении записей:', error);
     res.status(500).json({ error: 'Не удалось получить записи' });
   }
 });
 
-// Окно 2: Создание записи и общение с ИИ
-app.post('/entries', async (req, res) => {
+// Окно 2: Создание записи
+app.post('/entries', authenticateToken, async (req, res) => {
   try {
     const { mood } = req.body;
+    if (!mood) return res.status(400).json({ error: 'Текст не может быть пустым' });
 
-    if (!mood) {
-      return res.status(400).json({ error: 'Текст записи не может быть пустым' });
-    }
-
-   // 1. Берем классическую, безотказную модель gemini-pro
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    // 2. Вшиваем инструкцию прямо в текст запроса
     const prompt = `Действуй как поддерживающий ассистент для ведения дневника. 
     Ответь коротко, по-доброму и ободряюще (не более 3 предложений) на эту мысль человека: "${mood}"`;
 
-    // 3. Отправляем текст и ждем ответ
     const result = await model.generateContent(prompt);
     const aiResponse = result.response.text();
 
-    // 3. Сохраняем в базу данных
+    // Сохраняем в базу с привязкой к ID создателя!
     const newEntry = await prisma.journalEntry.create({
       data: {
         mood: mood,
-        aiResponse: aiResponse
+        aiResponse: aiResponse,
+        userId: req.user.id // ПРИВЯЗЫВАЕМ К АВТОРУ
       }
     });
 
-    // 4. Возвращаем результат
     res.status(201).json(newEntry);
-
   } catch (error) {
-    console.error('Ошибка при создании записи:', error);
+    console.error(error);
     res.status(500).json({ error: 'Не удалось сохранить запись' });
   }
 });
 
-app.delete('/entries/:id', async (req, res) => {
+// Окно 3: Удаление (ТОЛЬКО СВОЕЙ ЗАПИСИ)
+app.delete('/entries/:id', authenticateToken, async (req, res) => {
   try {
-    const entryId = parseInt(req.params.id); // Достаем ID из ссылки и превращаем в число
+    const entryId = parseInt(req.params.id);
 
-    // Просим базу данных (Prisma) удалить запись с таким ID
-    await prisma.journalEntry.delete({
-      where: { id: entryId }
+    // deleteMany позволяет удалить запись только если совпадает и ID записи, и ID юзера
+    const deleted = await prisma.journalEntry.deleteMany({
+      where: { 
+        id: entryId,
+        userId: req.user.id 
+      }
     });
 
-    // Отвечаем фронтенду, что всё прошло успешно
-    res.status(200).json({ message: 'Запись успешно удалена' });
+    if (deleted.count === 0) {
+      return res.status(404).json({ error: 'Запись не найдена или у вас нет прав на ее удаление' });
+    }
+
+    res.status(200).json({ message: 'Запись удалена' });
   } catch (error) {
-    console.error('Ошибка при удалении записи:', error);
     res.status(500).json({ error: 'Не удалось удалить запись' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Сервер с Gemini запущен на http://localhost:${PORT}`);
+  console.log(`Сервер с Аутентификацией запущен на http://localhost:${PORT}`);
 });

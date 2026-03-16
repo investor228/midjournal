@@ -1,52 +1,144 @@
-const API_URL = 'http://localhost:3000/entries';
+const API_URL = 'http://localhost:3000';
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+// Элементы Авторизации
+const authSection = document.getElementById('authSection');
+const journalSection = document.getElementById('journalSection');
+const authTitle = document.getElementById('authTitle');
+const nameInput = document.getElementById('nameInput');
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const authBtn = document.getElementById('authBtn');
+const toggleAuthMode = document.getElementById('toggleAuthMode');
+const logoutBtn = document.getElementById('logoutBtn');
 
+// Элементы Дневника
 const moodInput = document.getElementById('moodInput');
 const submitBtn = document.getElementById('submitBtn');
 const aiResponseArea = document.getElementById('aiResponseArea');
 const aiText = document.getElementById('aiText');
 const entriesList = document.getElementById('entriesList');
-const searchInput = document.getElementById('searchInput'); // Находим поле поиска
-// Слушаем нажатия клавиш в поле ввода текста
-moodInput.addEventListener('keydown', (event) => {
-  // Если нажат Enter И при этом НЕ зажат Shift
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault(); // Запрещаем браузеру делать перенос строки
-    submitBtn.click();      // Программно "нажимаем" на кнопку отправки
-  }
-});
+const searchInput = document.getElementById('searchInput');
 
-// НОВАЯ ПЕРЕМЕННАЯ: Здесь мы будем хранить ВСЕ записи в памяти браузера
-let allEntries = []; 
+let allEntries = [];
+let isLoginMode = true; // Флаг: мы сейчас входим или регистрируемся?
 
-// 1. Функция: Скачать историю (только скачивает)
-async function loadEntries() {
-  try {
-    const response = await fetch(API_URL);
-    allEntries = await response.json(); // Сохраняем скачанное в нашу переменную
-    
-    renderEntries(allEntries); // Просим нарисовать всё, что скачали
-  } catch (error) {
-    console.error('Ошибка загрузки истории:', error);
+// ==========================================
+// 🛡️ СИСТЕМА АВТОРИЗАЦИИ
+// ==========================================
+
+// Проверяем, есть ли у нас сохраненный пропуск
+function checkAuth() {
+  const token = localStorage.getItem('token');
+  if (token) {
+    authSection.style.display = 'none';
+    journalSection.style.display = 'block';
+    loadEntries(); // Если пропуск есть, пускаем и грузим историю
+  } else {
+    authSection.style.display = 'block';
+    journalSection.style.display = 'none';
   }
 }
 
-// 2. НОВАЯ ФУНКЦИЯ: Только рисует то, что ей передали
+// Переключатель между Входом и Регистрацией
+toggleAuthMode.addEventListener('click', () => {
+  isLoginMode = !isLoginMode;
+  if (isLoginMode) {
+    authTitle.textContent = 'Вход в дневник 🔒';
+    nameInput.style.display = 'none';
+    authBtn.textContent = 'Войти';
+    toggleAuthMode.textContent = 'Нет аккаунта? Зарегистрироваться';
+  } else {
+    authTitle.textContent = 'Создать аккаунт ✨';
+    nameInput.style.display = 'block';
+    authBtn.textContent = 'Зарегистрироваться';
+    toggleAuthMode.textContent = 'Уже есть аккаунт? Войти';
+  }
+});
+
+// Кнопка Входа/Регистрации
+authBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  const name = nameInput.value.trim();
+
+  if (!email || !password) return alert('Введи Email и пароль!');
+
+  const endpoint = isLoginMode ? '/login' : '/register';
+  const bodyData = isLoginMode ? { email, password } : { email, password, name };
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return alert(data.error || 'Произошла ошибка');
+    }
+
+    if (isLoginMode) {
+      // ЕСЛИ ВОШЛИ УСПЕШНО: Сохраняем токен в память браузера!
+      localStorage.setItem('token', data.token);
+      checkAuth(); // Переключаем экраны
+    } else {
+      alert('Регистрация успешна! Теперь выполни вход.');
+      toggleAuthMode.click(); // Перекидываем на экран логина
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Ошибка соединения с сервером.');
+  }
+});
+
+// Кнопка Выхода (просто удаляем пропуск и перезагружаем)
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('token');
+  checkAuth();
+});
+
+// ==========================================
+// 📖 ФУНКЦИИ ДНЕВНИКА (С ПРОПУСКАМИ!)
+// ==========================================
+
+// Функция: Достать токен для заголовков
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}` // ВОТ ОН, НАШ ПРОПУСК!
+});
+
+async function loadEntries() {
+  try {
+    const response = await fetch(`${API_URL}/entries`, { headers: getAuthHeaders() });
+    
+    // Если токен просрочен, сервер вернет 401 или 403
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem('token');
+      return checkAuth();
+    }
+
+    allEntries = await response.json();
+    renderEntries(allEntries);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 function renderEntries(entriesToDraw) {
-  entriesList.innerHTML = ''; // Очищаем экран
-  
-  // Если после поиска ничего не найдено
+  entriesList.innerHTML = ''; 
   if (entriesToDraw.length === 0) {
-    entriesList.innerHTML = '<p style="color: gray; text-align: center;">Ничего не найдено 🤷‍♂️</p>';
+    entriesList.innerHTML = '<p style="color: gray; text-align: center;">Записей пока нет. Напиши что-нибудь!</p>';
     return;
   }
   
-  // Перебираем записи и рисуем карточки
   entriesToDraw.forEach(entry => {
     const div = document.createElement('div');
     div.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: start;">
         <p style="margin: 0 0 10px 0; width: 90%;"><strong>Твои мысли:</strong> ${entry.mood}</p>
-        <button onclick="deleteEntry(${entry.id})" class="delete-btn" title="Удалить запись">✖</button>
+        <button onclick="deleteEntry(${entry.id})" class="delete-btn" title="Удалить">✖</button>
       </div>
       <p style="margin: 0 0 10px 0; color: #1565c0;"><strong>ИИ:</strong> ${entry.aiResponse}</p>
       <small style="color: gray;">${new Date(entry.createdAt).toLocaleString()}</small>
@@ -55,55 +147,18 @@ function renderEntries(entriesToDraw) {
   });
 }
 
-// 3. НОВАЯ МАГИЯ: Слушаем поле поиска
-// Событие 'input' срабатывает при каждом нажатии любой клавиши в поле
-searchInput.addEventListener('input', (event) => {
-  // Берем текст из поиска и переводим в нижний регистр (чтобы "Сон" и "сон" искались одинаково)
-  const searchText = event.target.value.toLowerCase();
-
-  // Фильтруем наш массив всех записей
-  const filteredEntries = allEntries.filter(entry => {
-    // Проверяем, есть ли искомое слово в мыслях ИЛИ в ответе ИИ
-    const moodMatch = entry.mood.toLowerCase().includes(searchText);
-    const aiMatch = entry.aiResponse.toLowerCase().includes(searchText);
-    
-    return moodMatch || aiMatch; // Оставляем запись, если есть хотя бы одно совпадение
-  });
-
-  // Рисуем только отфильтрованные записи!
-  renderEntries(filteredEntries);
-});
-
-// Удаление записи
-window.deleteEntry = async (id) => {
-  const isConfirmed = confirm('Точно хочешь удалить эту мысль навсегда?');
-  if (!isConfirmed) return;
-
-  try {
-    const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-    if (response.ok) {
-      loadEntries(); // Скачиваем обновленный список с сервера
-      searchInput.value = ''; // Очищаем поиск после удаления
-    } else {
-      alert('Ошибка при удалении на сервере.');
-    }
-  } catch (error) {
-    console.error('Ошибка:', error);
-  }
-};
-
-// Отправка новой записи
+// Отправка записи
 submitBtn.addEventListener('click', async () => {
   const text = moodInput.value.trim();
-  if (!text) return alert('Сначала напиши что-нибудь!');
+  if (!text) return alert('Напиши что-нибудь!');
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Нейросеть думает...';
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_URL}/entries`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(), // Добавляем пропуск!
       body: JSON.stringify({ mood: text })
     });
 
@@ -112,10 +167,8 @@ submitBtn.addEventListener('click', async () => {
     aiText.textContent = newEntry.aiResponse;
     moodInput.value = '';
     
-    loadEntries(); // Скачиваем обновленный список
-    searchInput.value = ''; // Очищаем поиск
+    loadEntries();
   } catch (error) {
-    console.error('Ошибка отправки:', error);
     alert('Не удалось отправить запись.');
   } finally {
     submitBtn.disabled = false;
@@ -123,5 +176,59 @@ submitBtn.addEventListener('click', async () => {
   }
 });
 
-// Запускаем при открытии
-loadEntries();
+// Удаление записи
+window.deleteEntry = async (id) => {
+  if (!confirm('Удалить навсегда?')) return;
+  try {
+    const response = await fetch(`${API_URL}/entries/${id}`, { 
+      method: 'DELETE',
+      headers: getAuthHeaders() // Добавляем пропуск!
+    });
+    if (response.ok) loadEntries();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// Поиск
+searchInput.addEventListener('input', (e) => {
+  const searchText = e.target.value.toLowerCase();
+  const filtered = allEntries.filter(entry => 
+    entry.mood.toLowerCase().includes(searchText) || 
+    entry.aiResponse.toLowerCase().includes(searchText)
+  );
+  renderEntries(filtered);
+});
+
+// Отправка по Enter
+moodInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault(); 
+    submitBtn.click();      
+  }
+});
+
+// ==========================================
+// 🌙 ТЕМНАЯ ТЕМА
+// ==========================================
+
+// Проверяем, сохранял ли юзер темную тему ранее
+if (localStorage.getItem('theme') === 'dark') {
+  document.body.classList.add('dark-theme');
+}
+
+// Слушаем клик по кнопке с луной
+themeToggleBtn.addEventListener('click', () => {
+  // Переключаем класс dark-theme на body
+  document.body.classList.toggle('dark-theme');
+  
+  // Сохраняем выбор в память браузера
+  if (document.body.classList.contains('dark-theme')) {
+    localStorage.setItem('theme', 'dark');
+  } else {
+    localStorage.setItem('theme', 'light');
+  }
+});
+
+// Запускаем проверку при открытии сайта
+checkAuth();

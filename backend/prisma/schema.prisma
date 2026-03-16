@@ -7,10 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Наш чертеж для записи в дневнике
+// НОВАЯ ТАБЛИЦА: Пользователи
+model User {
+  id        Int            @id @default(autoincrement())
+  email     String         @unique // Email должен быть уникальным
+  password  String         // Здесь будет храниться зашифрованный пароль
+  name      String?        // Имя (необязательно)
+  entries   JournalEntry[] // Связь: у юзера много записей
+  createdAt DateTime       @default(now())
+}
+
+// ОБНОВЛЕННАЯ ТАБЛИЦА: Записи дневника
 model JournalEntry {
   id         Int      @id @default(autoincrement())
   mood       String
   aiResponse String
   createdAt  DateTime @default(now())
+  
+  // Связываем запись с конкретным пользователем
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
 }

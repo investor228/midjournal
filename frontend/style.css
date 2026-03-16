@@ -1,158 +1,119 @@
 /* =========================================
-   1. БАЗОВЫЕ НАСТРОЙКИ (Фон и шрифт)
+   1. ПАЛИТРА ЦВЕТОВ (Переменные)
+   ========================================= */
+:root {
+  --bg-main: #f3f4f6;          /* Фон страницы */
+  --bg-card: #ffffff;          /* Фон карточки дневника */
+  --text-main: #1f2937;        /* Основной текст */
+  --text-muted: gray;          /* Второстепенный текст */
+  --border-color: #e5e7eb;     /* Рамки */
+  --bg-input: #ffffff;         /* Фон полей ввода */
+  --bg-entry: #f9fafb;         /* Фон прошлой записи */
+  --bg-ai: #eff6ff;            /* Фон ответа ИИ */
+  --border-ai: #bfdbfe;        /* Рамка ответа ИИ */
+}
+
+/* Когда на body вешается этот класс, цвета автоматически подменяются */
+.dark-theme {
+  --bg-main: #111827;          /* Темно-серый фон страницы */
+  --bg-card: #1f2937;          /* Чуть светлее для карточки */
+  --text-main: #f3f4f6;        /* Светлый текст */
+  --text-muted: #9ca3af;       /* Светло-серый текст */
+  --border-color: #374151;     /* Темные рамки */
+  --bg-input: #374151;         /* Темный фон полей ввода */
+  --bg-entry: #374151;         /* Темный фон прошлой записи */
+  --bg-ai: #1e3a8a;            /* Темно-синий фон ИИ */
+  --border-ai: #1e40af;        /* Темно-синяя рамка ИИ */
+}
+
+/* =========================================
+   2. БАЗОВЫЕ НАСТРОЙКИ
    ========================================= */
 body {
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /* Ставим чистый, современный шрифт */
-  background-color: #f3f4f6; /* Делаем фон не чисто белым, а мягко-серым, чтобы глаза не уставали */
-  color: #1f2937; /* Цвет текста делаем темно-серым (чисто черный слишком резкий) */
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
   margin: 0;
   padding: 20px;
-  
-  /* Эти три строчки центрируют наш дневник ровно посередине экрана */
   display: flex; 
   justify-content: center;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Плавная смена темы */
 }
 
-/* =========================================
-   2. ГЛАВНАЯ КАРТОЧКА (Сам дневник)
-   ========================================= */
 .container {
-  background-color: #ffffff; /* Сама карточка будет чисто белой */
+  background-color: var(--bg-card);
   width: 100%;
-  max-width: 600px; /* Ограничиваем ширину, чтобы на больших мониторах текст не разъезжался */
-  padding: 30px; /* Внутренние отступы от краев до текста (чтобы дневнику "дышалось") */
-  border-radius: 16px; /* Сильно скругляем углы карточки */
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* Добавляем мягкую, еле заметную тень для эффекта парения */
+  max-width: 600px;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
 }
 
-/* Заголовки */
-h1 {
-  text-align: center; /* Ставим заголовок по центру */
-  margin-top: 0;
-  color: #111827;
-}
-
-h2 {
-  font-size: 1.2rem;
-  border-bottom: 2px solid #e5e7eb; /* Добавляем тонкую линию под заголовком истории */
-  padding-bottom: 10px;
-}
+h1, h2, h3 { color: var(--text-main); }
+h2 { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
 
 /* =========================================
-   3. ПОЛЕ ВВОДА (Текстовая зона)
+   3. ПОЛЯ ВВОДА
    ========================================= */
-textarea {
+textarea, input[type="text"], input[type="email"], input[type="password"] {
   width: 100%;
-  box-sizing: border-box; /* Чтобы отступы не ломали ширину */
-  padding: 15px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px; /* Тоже скругляем углы */
+  box-sizing: border-box;
+  padding: 12px 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
   font-size: 1rem;
-  resize: vertical; /* Разрешаем растягивать поле только вниз (не вбок) */
-  outline: none; /* Убираем стандартную синюю обводку браузера */
-  transition: border-color 0.3s ease; /* Делаем анимацию плавного изменения цвета */
+  outline: none;
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Когда кликаем на поле ввода, меняем цвет рамки на приятный синий */
-textarea:focus {
-  border-color: #3b82f6;
-}
+textarea:focus, input:focus { border-color: #3b82f6; }
+textarea { resize: vertical; margin-bottom: 15px; }
+#searchInput { margin-bottom: 20px; }
 
 /* =========================================
-   4. КНОПКА ОТПРАВКИ
+   4. КНОПКИ
    ========================================= */
 button {
   width: 100%;
-  background-color: #3b82f6; /* Приятный синий цвет */
+  background-color: #3b82f6;
   color: white;
   border: none;
   padding: 12px;
   border-radius: 10px;
   font-size: 1.1rem;
   font-weight: bold;
-  cursor: pointer; /* Делаем курсор "пальцем", чтобы было понятно, что это кнопка */
-  margin-top: 15px;
-  transition: background-color 0.2s ease, transform 0.1s ease; /* Плавность для цвета и нажатия */
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-/* Эффект при наведении мышки (кнопка чуть темнеет) */
-button:hover {
-  background-color: #2563eb;
-}
-
-/* Эффект при клике (кнопка чуть-чуть проваливается вниз) */
-button:active {
-  transform: scale(0.98);
-}
-
-/* Если кнопка отключена (пока нейросеть думает), делаем её серой */
-button:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
+button:hover { background-color: #2563eb; }
+button:active { transform: scale(0.98); }
+button:disabled { background-color: #9ca3af; cursor: not-allowed; }
 
 /* =========================================
-   5. ИСТОРИЯ ЗАПИСЕЙ И ОТВЕТ ИИ
+   5. ИСТОРИЯ И ИИ
    ========================================= */
-/* Карточки с прошлыми записями */
 #entriesList div {
-  background-color: #f9fafb;
-  border: 1px solid #f3f4f6 !important; /* Перебиваем старый дизайн из JS */
+  background-color: var(--bg-entry) !important;
+  border: 1px solid var(--border-color) !important;
   padding: 15px !important;
   margin-bottom: 15px !important;
   border-radius: 12px !important;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Блок с ответом ИИ */
 #aiResponseArea {
-  background-color: #eff6ff !important; /* Нежно-голубой фон для акцента */
-  border: 1px solid #bfdbfe;
+  background-color: var(--bg-ai) !important;
+  border: 1px solid var(--border-ai) !important;
+  color: var(--text-main);
 }
 
-/* =========================================
-   6. КНОПКА УДАЛЕНИЯ (Крестик)
-   ========================================= */
 .delete-btn {
-  background: none; /* Убираем синий фон */
-  border: none;
-  color: #ef4444; /* Делаем крестик красным */
-  font-size: 1.2rem;
-  width: auto; /* Отменяем растягивание на 100% */
-  padding: 5px 10px;
-  margin: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  background: none; border: none; color: #ef4444; font-size: 1.2rem;
+  width: auto; padding: 5px 10px; margin: 0; border-radius: 8px; cursor: pointer;
 }
-
-/* При наведении появляется нежно-красный фон */
-.delete-btn:hover {
-  background-color: #fee2e2;
-  color: #dc2626;
-}
-
-/* При клике кнопка чуть-чуть сжимается */
-.delete-btn:active {
-  transform: scale(0.9);
-}
-
-/* =========================================
-   7. ПОЛЕ УМНОГО ПОИСКА
-   ========================================= */
-#searchInput {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 15px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.3s ease;
-  margin-bottom: 20px; /* Отступ снизу до самих записей */
-}
-
-/* При клике рамка синеет */
-#searchInput:focus {
-  border-color: #3b82f6;
-}
+.delete-btn:hover { background-color: #fee2e2; color: #dc2626; }

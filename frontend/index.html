@@ -7,10 +7,32 @@
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
-    <div class="container">
-      <h1>Мой дневник 📖</h1>
+    <div class="container" id="authSection" style="max-width: 400px;">
+      <h1 id="authTitle">Вход в дневник 🔒</h1>
       
-      <div class="input-section">
+      <div class="input-section" style="display: flex; flex-direction: column; gap: 15px;">
+        <input type="text" id="nameInput" placeholder="Твое имя (только для регистрации)" style="display: none; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
+        <input type="email" id="emailInput" placeholder="Твой Email" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
+        <input type="password" id="passwordInput" placeholder="Пароль" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
+        
+        <button id="authBtn">Войти</button>
+      </div>
+      
+      <p id="toggleAuthMode" style="text-align: center; color: #3b82f6; cursor: pointer; margin-top: 15px; font-weight: bold;">
+        Нет аккаунта? Зарегистрироваться
+      </p>
+    </div>
+
+   <div class="container" id="journalSection" style="display: none;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0;">Мой дневник 📖</h1>
+        
+        <div style="display: flex; gap: 10px;">
+          <button id="themeToggleBtn" style="width: auto; background-color: transparent; border: 2px solid #e5e7eb; color: var(--text-main); padding: 8px 12px; font-size: 1.2rem;">🌓</button>
+          <button id="logoutBtn" style="width: auto; background-color: #ef4444; padding: 8px 15px; margin: 0;">Выйти</button>
+        </div>
+      </div> <div class="input-section">
         <textarea id="moodInput" rows="4" placeholder="Что ты чувствуешь сейчас?"></textarea>
         <button id="submitBtn">Отправить</button>
       </div>
@@ -22,7 +44,7 @@
 
       <div class="history-section" style="margin-top: 40px;">
         <h2>История записей</h2>
-        <input type="text" id="searchInput" placeholder="🔍 Найти в дневнике (по тексту или ответу ИИ)...">
+        <input type="text" id="searchInput" placeholder="🔍 Найти в дневнике...">
         <div id="entriesList"></div>
       </div>
     </div>
