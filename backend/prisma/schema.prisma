@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Наш чертеж для записи в дневнике
+model JournalEntry {
+  id         Int      @id @default(autoincrement())
+  mood       String
+  aiResponse String
+  createdAt  DateTime @default(now())
+}

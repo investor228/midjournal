@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoodJournal</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Мой дневник 📖</h1>
+      
+      <div class="input-section">
+        <textarea id="moodInput" rows="4" placeholder="Что ты чувствуешь сейчас?"></textarea>
+        <button id="submitBtn">Отправить</button>
+      </div>
+
+      <div id="aiResponseArea" style="display: none; background: #e3f2fd; padding: 15px; margin-top: 15px; border-radius: 8px;">
+        <h3>Ответ ИИ: ✨</h3>
+        <p id="aiText"></p>
+      </div>
+
+      <div class="history-section" style="margin-top: 40px;">
+        <h2>История записей</h2>
+        <input type="text" id="searchInput" placeholder="🔍 Найти в дневнике (по тексту или ответу ИИ)...">
+        <div id="entriesList"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
