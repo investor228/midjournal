@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://midjournal.onrender.com';
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 // Элементы Авторизации
 const authSection = document.getElementById('authSection');
