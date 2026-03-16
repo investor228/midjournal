@@ -153,6 +153,67 @@ app.delete('/entries/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ==========================================
+// ⚙️ НАСТРОЙКИ ПРОФИЛЯ
+// ==========================================
+
+// 1. Получить текущие данные пользователя
+app.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    res.json({ name: user.name, email: user.email });
+  } catch (error) {
+    res.status(500).json({ error: 'Не удалось загрузить профиль' });
+  }
+});
+
+// 2. Обновить Имя и Email
+app.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    
+    // Проверяем, не занят ли новый email кем-то другим
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser && existingUser.id !== req.user.id) {
+      return res.status(400).json({ error: 'Этот Email уже занят другим пользователем' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { name, email }
+    });
+
+    res.json({ message: 'Профиль успешно обновлен!', user: { name: updatedUser.name, email: updatedUser.email } });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при обновлении профиля' });
+  }
+});
+
+// 3. Безопасная смена пароля
+app.put('/profile/password', authenticateToken, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    // Проверяем, правильно ли ввели старый пароль
+    const validPassword = await bcrypt.compare(oldPassword, user.password);
+    if (!validPassword) return res.status(400).json({ error: 'Неверный старый пароль' });
+
+    // Шифруем новый пароль
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Сохраняем в базу
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedNewPassword }
+    });
+
+    res.json({ message: 'Пароль успешно изменен!' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при смене пароля' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Сервер с Аутентификацией запущен на http://localhost:${PORT}`);
 });

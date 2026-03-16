@@ -230,5 +230,98 @@ themeToggleBtn.addEventListener('click', () => {
   }
 });
 
+// ==========================================
+// ⚙️ ЛОГИКА НАСТРОЕК ПРОФИЛЯ
+// ==========================================
+
+// Находим новые элементы
+const profileSection = document.getElementById('profileSection');
+const openSettingsBtn = document.getElementById('openSettingsBtn');
+const backToJournalBtn = document.getElementById('backToJournalBtn');
+
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+const oldPassword = document.getElementById('oldPassword');
+const newPassword = document.getElementById('newPassword');
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+
+// Открыть настройки
+openSettingsBtn.addEventListener('click', async () => {
+  journalSection.style.display = 'none';
+  profileSection.style.display = 'block';
+
+  // Запрашиваем актуальные данные с сервера
+  try {
+    const response = await fetch(`${API_URL}/profile`, { headers: getAuthHeaders() });
+    if (response.ok) {
+      const data = await response.json();
+      profileName.value = data.name || '';
+      profileEmail.value = data.email || '';
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки профиля', error);
+  }
+});
+
+// Вернуться в дневник
+backToJournalBtn.addEventListener('click', () => {
+  profileSection.style.display = 'none';
+  journalSection.style.display = 'block';
+});
+
+// Сохранить Имя и Email
+saveProfileBtn.addEventListener('click', async () => {
+  const name = profileName.value.trim();
+  const email = profileEmail.value.trim();
+
+  if (!email) return alert('Email не может быть пустым!');
+
+  try {
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name, email })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert(data.message);
+    } else {
+      alert(data.error);
+    }
+  } catch (error) {
+    alert('Ошибка при сохранении профиля');
+  }
+});
+
+// Сменить пароль
+changePasswordBtn.addEventListener('click', async () => {
+  const oldPass = oldPassword.value.trim();
+  const newPass = newPassword.value.trim();
+
+  if (!oldPass || !newPass) return alert('Заполни оба поля с паролями!');
+  if (oldPass === newPass) return alert('Новый пароль должен отличаться от старого!');
+
+  try {
+    const response = await fetch(`${API_URL}/profile/password`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert(data.message);
+      oldPassword.value = '';
+      newPassword.value = '';
+    } else {
+      alert(data.error); // Например "Неверный старый пароль"
+    }
+  } catch (error) {
+    alert('Ошибка при смене пароля');
+  }
+});
 // Запускаем проверку при открытии сайта
 checkAuth();

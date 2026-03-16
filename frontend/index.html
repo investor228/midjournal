@@ -9,35 +9,33 @@
   <body>
     <div class="container" id="authSection" style="max-width: 400px;">
       <h1 id="authTitle">Вход в дневник 🔒</h1>
-      
       <div class="input-section" style="display: flex; flex-direction: column; gap: 15px;">
-        <input type="text" id="nameInput" placeholder="Твое имя (только для регистрации)" style="display: none; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
-        <input type="email" id="emailInput" placeholder="Твой Email" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
-        <input type="password" id="passwordInput" placeholder="Пароль" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 1rem; outline: none;">
-        
+        <input type="text" id="nameInput" placeholder="Твое имя (только для регистрации)" style="display: none;">
+        <input type="email" id="emailInput" placeholder="Твой Email">
+        <input type="password" id="passwordInput" placeholder="Пароль">
         <button id="authBtn">Войти</button>
       </div>
-      
       <p id="toggleAuthMode" style="text-align: center; color: #3b82f6; cursor: pointer; margin-top: 15px; font-weight: bold;">
         Нет аккаунта? Зарегистрироваться
       </p>
     </div>
 
-   <div class="container" id="journalSection" style="display: none;">
-      
+    <div class="container" id="journalSection" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1 style="margin: 0;">Мой дневник 📖</h1>
-        
         <div style="display: flex; gap: 10px;">
-          <button id="themeToggleBtn" style="width: auto; background-color: transparent; border: 2px solid #e5e7eb; color: var(--text-main); padding: 8px 12px; font-size: 1.2rem;">🌓</button>
+          <button id="themeToggleBtn" style="width: auto; background-color: transparent; border: 2px solid var(--border-color); color: var(--text-main); padding: 8px 12px; font-size: 1.2rem;" title="Сменить тему">🌓</button>
+          <button id="openSettingsBtn" style="width: auto; background-color: transparent; border: 2px solid var(--border-color); color: var(--text-main); padding: 8px 12px; font-size: 1.2rem;" title="Настройки">⚙️</button>
           <button id="logoutBtn" style="width: auto; background-color: #ef4444; padding: 8px 15px; margin: 0;">Выйти</button>
         </div>
-      </div> <div class="input-section">
+      </div>
+
+      <div class="input-section">
         <textarea id="moodInput" rows="4" placeholder="Что ты чувствуешь сейчас?"></textarea>
         <button id="submitBtn">Отправить</button>
       </div>
 
-      <div id="aiResponseArea" style="display: none; background: #e3f2fd; padding: 15px; margin-top: 15px; border-radius: 8px;">
+      <div id="aiResponseArea" style="display: none; background: var(--bg-ai); padding: 15px; margin-top: 15px; border-radius: 8px; border: 1px solid var(--border-ai);">
         <h3>Ответ ИИ: ✨</h3>
         <p id="aiText"></p>
       </div>
@@ -46,6 +44,27 @@
         <h2>История записей</h2>
         <input type="text" id="searchInput" placeholder="🔍 Найти в дневнике...">
         <div id="entriesList"></div>
+      </div>
+    </div>
+
+    <div class="container" id="profileSection" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="margin: 0;">Настройки ⚙️</h1>
+        <button id="backToJournalBtn" style="width: auto; background-color: #6b7280; padding: 8px 15px; margin: 0;">⬅ Назад</button>
+      </div>
+
+      <h2 style="margin-top: 20px;">Основная информация</h2>
+      <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+        <input type="text" id="profileName" placeholder="Твое имя">
+        <input type="email" id="profileEmail" placeholder="Твой Email">
+        <button id="saveProfileBtn">Сохранить изменения</button>
+      </div>
+
+      <h2>Смена пароля</h2>
+      <div style="display: flex; flex-direction: column; gap: 15px;">
+        <input type="password" id="oldPassword" placeholder="Старый пароль">
+        <input type="password" id="newPassword" placeholder="Новый пароль">
+        <button id="changePasswordBtn" style="background-color: #f59e0b;">Обновить пароль</button>
       </div>
     </div>
 
